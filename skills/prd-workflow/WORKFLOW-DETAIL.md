@@ -1,6 +1,8 @@
 # PRD 工作流详细 Prompt 模板
 
 > 本文件包含 prd-workflow Skill 各 Phase 的详细 Subagent 调用 prompt 模板。主 Agent 在调用 Subagent 时参考本文件构建 prompt。
+>
+> **DSH 使用方式**：下面每个模板都只是「本次任务」部分。委派时按 `prd-workflow` 技能里的「Subagent 委派约定」，把 `{repoRoot}/agents/<角色>.md` 的**完整正文放在模板之前**，再用 `subagent` 工具发起委派。模板中出现的 `{knowledgeBase}` 从 `~/.pm-skill/config.yml` 读取；未配置时跳过知识库相关条目。
 
 ---
 
@@ -11,8 +13,8 @@
 ### 知识库辅助
 
 澄清前先读取以下文件建立业务认知：
-1. `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\CLAUDE.md` — 了解系统全貌（3 应用 7 端）
-2. `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\index.md` — 定位与需求相关的模块文档
+1. `{knowledgeBase}/CLAUDE.md` — 了解系统全貌（3 应用 7 端）
+2. `{knowledgeBase}/index.md` — 定位与需求相关的模块文档
 3. 根据用户提到的应用名，读取对应 `名词解释.md` 和相关业务文档
 
 ### 澄清问题维度（每轮可提多个问题）
@@ -71,9 +73,9 @@
 
 【阅读文件】
 1. output/context.md — 需求上下文
-2. d:\不动产qoder文件夹\openclaw-skills-knowledge-base\CLAUDE.md — 系统结构
-3. d:\不动产qoder文件夹\openclaw-skills-knowledge-base\index.md — 导航索引（找到 {应用名} 章节）
-4. d:\不动产qoder文件夹\openclaw-skills-knowledge-base\{应用名}\名词解释.md — 术语对齐
+2. {knowledgeBase}/CLAUDE.md — 系统结构
+3. {knowledgeBase}/index.md — 导航索引（找到 {应用名} 章节）
+4. {knowledgeBase}/{应用名}/名词解释.md — 术语对齐
 5. 知识库中与需求相关的业务文档（通过 index.md 定位）
 
 【任务】
@@ -211,7 +213,7 @@
 【阅读文件】
 1. output/prd/PRD-{name}-v1.md — 待评审 PRD
 2. output/context.md — 项目背景
-3. d:\不动产qoder文件夹\openclaw-skills-knowledge-base\CLAUDE.md — 系统结构
+3. {knowledgeBase}/CLAUDE.md — 系统结构
 4. 知识库中相关架构文档（权限中心/支付中心/订单中心等）
 
 【评审焦点】

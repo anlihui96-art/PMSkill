@@ -283,43 +283,28 @@ switch(status) {
 }
 ```
 
-## OSS 上传（🔴 必须执行）
+## OSS 上传
 
-**每次原型创建或修改后，必须立即上传到阿里云 OSS。**
+上传动作统一交给 **`oss-upload` 技能**（本仓库唯一的上传实现：零第三方依赖的 OSS V1 签名 + 上传后 `--verify` 校验）。
+本节的 `ali-oss` 代码片段与顶层 `await` 写法已废弃删除——照着旧模板写会在 CommonJS 下直接语法错误。
 
-### OSS 配置
+### 路径与 Content-Type
 
-```js
-const OSS = require('ali-oss');
-const client = new OSS({
-  region: 'oss-cn-shanghai',
-  accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-  accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-  bucket: process.env.OSS_BUCKET
-});
-```
-
-### 上传脚本模板
-
-```js
-const files = ['pages/xxx.html']; // 修改的文件列表
-const baseDir = 'd:/不动产qoder文件夹/output/zhelicha/v2-二期/prototype';
-
-for (const f of files) {
-  const localPath = require('path').join(baseDir, f);
-  await client.put(f, localPath, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' }
-  });
-}
-```
+- bucket `demoddys`、region `oss-cn-shanghai`（非密钥项可在 `~/.pm-skill/config.yml` 的 `oss:` 段覆盖）
+- 上传路径相对于 bucket 根目录，前缀按项目，例如 `ai-auction-analysis/v1-售前分析/user-web-query-lawyer.html`
+- **必须**保证 `Content-Type: text/html; charset=utf-8`，否则浏览器会下载文件而不是渲染
 
 ### 公网访问地址
 
-- 自定义域名: `https://demo.ddys-inc.com/`
-- OSS 直接域名: `https://demoddys.oss-cn-shanghai.aliyuncs.com/`
+- 自定义域名（交付用这个）：`https://demo.ddys-inc.com/`
+- OSS 直连域名：`https://demoddys.oss-cn-shanghai.aliyuncs.com/`
 
-### ⚠️ 注意事项
+### 🔴 无凭据时降级（次级备选）
 
-- 必须显式设置 `Content-Type: text/html; charset=utf-8`，否则浏览器会下载文件而非渲染
-- 上传路径相对于 bucket 根目录（如 `pages/user-web-query-lawyer.html`）
-- 上传完成后告知用户公网访问地址
+凭据**不在配置文件里**，由 `oss-upload` 在运行时从环境变量或既有脚本读取。若脚本退出码 3（取不到凭据）：
+
+1. 先排查 `oss.credentialsFrom` 指向的既有脚本是否有效——优先恢复真实上传
+2. 确实取不到时才改用本地 HTTP 服务预览（`python3 -m http.server <port>`）
+3. 交付说明必须写清「**未上传 OSS，交付未完成**」
+
+**交付完成的标志是线上 URL**（`https://demo.ddys-inc.com/...`）。本地预览地址只作次级备注，**不得占用 PRD / 导航页的主链接位**。

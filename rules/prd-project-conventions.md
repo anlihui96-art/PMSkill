@@ -8,7 +8,7 @@ type: always_apply
 
 ## 知识库
 
-- 知识库路径：`d:\不动产qoder文件夹\openclaw-skills-knowledge-base\`
+- 知识库路径：`{knowledgeBase}/`（从 `~/.pm-skill/config.yml` 的 `knowledgeBase` 字段读取；未配置则跳过知识库步骤并提示用户）
 - 所有业务术语必须与知识库中的 `名词解释.md` 保持一致
 - 涉及跨端功能时，需阅读所有相关端的文档
 
@@ -18,12 +18,13 @@ type: always_apply
 - PRD 文档：`output/{project-id}/{iteration-id}/prd/`
 - 评审报告：`output/{project-id}/{iteration-id}/reviews/`
 - HTML 原型：`output/{project-id}/{iteration-id}/prototype/pages/`
-- 原型截图：`output/{project-id}/{iteration-id}/prototype/screenshots/`
+
+> 不产出原型截图（团队约定：工作流取消截图环节，交付物不含 `screenshots/`）。
 
 ## 编码约定
 
 - PRD 使用中文编写
-- HTML 原型使用 TailwindCSS CDN
+- HTML 原型使用纯原生 CSS + 原生 JS，零 CDN 依赖（与 `html-prototype` 技能一致）
 - 文件命名使用 kebab-case（如 `order-list.md`、`user-detail.html`）
 - 日期格式：YYYY-MM-DD
 
@@ -90,7 +91,6 @@ type: always_apply
     │   │   │   ├── index.html
     │   │   │   ├── shared.js
     │   │   │   ├── pages/
-    │   │   │   └── screenshots/
     │   │   └── interaction-design.md
     │   └── {iteration-id-2}/
     └── _archive/                        # 归档区
@@ -103,7 +103,6 @@ type: always_apply
 | 迭代ID | v{n}-{功能简述} | v1-基础查询、v2-二期、v3-支付对接 |
 | PRD文件 | PRD-{中文名}-v{n}.md | PRD-这里查二期-v2.md |
 | 评审文件 | {type}-review-v{n}.md | dev-review-v2.md |
-| 截图文件 | 静态：{page-name}.png；交互：{page-name}_{state}.png | ops-order-list.png、user-web-login_error.png |
 
 ### project-meta.md 模板
 
@@ -115,7 +114,7 @@ type: always_apply
     - **项目ID**：{id}
     - **创建时间**：{date}
     - **项目描述**：{description}
-    - **相关知识库**：openclaw-skills-knowledge-base/{app}/
+    - **相关知识库**：{knowledgeBase}/{app}/
 
     ## 迭代记录
 

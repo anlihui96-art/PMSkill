@@ -10,8 +10,18 @@ description: >
 
 ## 知识库路径
 
+知识库根目录**不在本技能内硬编码**，统一从用户级配置读取：
+
+```bash
+cat "$HOME/.pm-skill/config.yml" 2>/dev/null || echo "NOT_CONFIGURED"
 ```
-d:\不动产qoder文件夹\openclaw-skills-knowledge-base\
+
+取其中 `knowledgeBase` 字段作为根目录（下文记为 `{knowledgeBase}`）。
+
+**未配置或目录不存在时**：不要猜测、不要编造业务内容；直接告知用户「知识库未配置，已跳过知识库检索」，并询问知识库根目录，拿到答案后写入 `~/.pm-skill/config.yml` 再继续。
+
+```
+{knowledgeBase}/
 ```
 
 ## 导航流程（必须按顺序）
@@ -37,9 +47,9 @@ Step 4: 读文档末尾"相关"部分 → 扩展上下文，发现关联文档
 
 | 应用 | 术语文件路径 |
 |------|------------|
-| 中台 | `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\中台\名词解释.md` |
-| 这里拍 | `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\这里拍\名词解释.md` |
-| 这里查 | `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\这里查\名词解释.md` |
+| 中台 | `{knowledgeBase}/中台/名词解释.md` |
+| 这里拍 | `{knowledgeBase}/这里拍/名词解释.md` |
+| 这里查 | `{knowledgeBase}/这里查/名词解释.md` |
 
 ## 各端文档目录速查
 

@@ -9,7 +9,8 @@ description: >
 
 # PRD 多 Agent 协作工作流
 
-> 本 Skill 指导主 Agent 编排 4 个 Subagent（pd-agent、ued-agent、dev-agent、qa-agent）完成从需求澄清到原型交付的完整流程。
+> 本 Skill 指导主 Agent 编排 4 个角色（pd-agent、ued-agent、dev-agent、qa-agent）完成从需求澄清到原型交付的完整流程。
+> DSH 环境下这些角色由 `subagent` 工具 + 仓库 `agents/*.md` 角色定义实现，具体见下方「运行环境与前置配置」。
 
 ## 流程总览
 
@@ -26,6 +27,83 @@ Phase 4：原型交付（交互设计 → ued-agent 生成 → 用户确认结�
     ↓
 完成交付
 ```
+
+## 运行环境与前置配置（必读）
+
+本 Skill 从 Qoder 迁移到 DSH 运行。下面 4 条约定是**所有 Phase 的前提**，每次进入工作流前先确认。
+
+### 1. 本机路径配置
+
+本机相关的绝对路径统一记录在用户级配置文件里，**不要在文档或 prompt 中硬编码本机路径**：
+
+```
+~/.pm-skill/config.yml
+```
+
+| 字段 | 含义 | 缺失/为空时的行为 |
+|------|------|------------------|
+| `repoRoot` | PMSkill 仓库在本机的克隆路径（`agents/*.md` 角色定义所在仓库根目录） | 用 `glob` 工具按 `**/agents/pd-agent.md` 定位仓库根目录，定位到后写回该配置 |
+| `knowledgeBase` | 产品知识库根目录（原 Qoder 环境为 `openclaw-skills-knowledge-base`） | 视为**未配置**：跳过所有知识库读取步骤，并在回复开头提示用户「知识库未配置」 |
+
+读取方式（文件可能不存在）：
+
+```bash
+cat "$HOME/.pm-skill/config.yml" 2>/dev/null || echo "NOT_CONFIGURED"
+```
+
+配置不存在或字段为空时：先向用户确认，拿到答案后创建/更新该文件再继续。**知识库未配置不阻塞流程**，按「未配置」降级即可。
+
+下文出现的 `{knowledgeBase}` 均指该配置中的知识库根目录。
+
+### 2. Subagent 委派约定
+
+DSH **没有** `pd-agent` / `ued-agent` / `dev-agent` / `qa-agent` 这类预置子代理，也读不到 Qoder 的 agent 注册表。这 4 个角色在本仓库里就是普通的 Markdown 角色定义文件：
+
+```
+{repoRoot}/agents/pd-agent.md
+{repoRoot}/agents/ued-agent.md
+{repoRoot}/agents/dev-agent.md
+{repoRoot}/agents/qa-agent.md
+```
+
+**委派一个角色 = 用 `subagent` 工具发起一次委派**，prompt 按以下结构拼接：
+
+```
+<读取 {repoRoot}/agents/<角色>.md 得到的完整正文>
+
+---
+
+## 本次任务
+
+<对应 Phase 的「任务 prompt」，即本文件各 Phase 代码块内的内容>
+```
+
+要点：
+
+- 角色定义正文必须**原样放在 prompt 最前面**，它包含该角色的身份、职责与输出规范。
+- 角色文件 frontmatter 里的 `tools` / `skills` 是 Qoder 写法，DSH 会忽略；请在 prompt 末尾明确写出该角色要加载的技能，例如「用 `skill` 工具加载 `tech-review`，按其维度评审」。
+- **需要并行时**（Phase 3 的 dev-agent + qa-agent），在**同一条回复里同时发起两个 `subagent` 调用**，不要串行等待。
+- 子代理之间不共享上下文，全部靠文件系统传递：prompt 里必须写清要读、要写的**具体文件路径**。
+- 委派前先用 `mkdir -p` 建好输出目录，避免子代理写文件失败。
+- 若当前会话没有 `subagent` 工具，退化为顺序执行各角色任务（由主 Agent 依次扮演角色），并在交付报告中说明。
+
+### 3. 技能与同目录资源的引用方式
+
+- 其它技能用 `skill` 工具**按名字**加载：`prd-writer`、`incremental-prd`、`prd-sync`、`html-prototype`、`tech-review`、`test-review`、`effort-estimate`、`knowledge-base-nav`。
+- 本 Skill 目录下的资源文件，用加载本 Skill 时返回的**基目录**拼接定位（工具结果里的 `resourceBase`，即提示中的「Base directory for this skill」）：
+  - `<基目录>/WORKFLOW-DETAIL.md` — 各 Phase 的详细 prompt 模板
+  - `<基目录>/CONTEXT-TEMPLATE.md` — `context.md` 字段模板
+- **不要**用 `../../` 之类相对路径向上找仓库根目录：技能是通过软链接注册的，基目录就是 `~/.dsh/skills/prd-workflow` 这个软链，向上回溯到不了仓库。需要仓库内的路径（如 `agents/*.md`）时，用配置里的 `repoRoot`。
+
+### 4. 能力缺失时的降级
+
+| 能力 | DSH 现状 | 处理方式 |
+|------|---------|---------|
+| 知识库读取 | 取决于 `knowledgeBase` 是否配置 | 未配置则跳过，并提示用户 |
+| 原型 / PRD 发布 | Qoder 用 Vercel（`/vercel-deploy`），DSH 没有该命令 | 改用 `oss-upload` 上传并挂总导航 `https://demo.ddys-inc.com/index.html`，**交付完成的标志是给出线上 URL**。本地预览只是次级备选，**不得占用 PRD 主链接位**；取不到凭据时如实说明「未上传 OSS，交付未完成」 |
+| Qoder 的 agent 自动编排 | 不存在 | 用上面的 `subagent` 委派约定代替 |
+
+---
 
 ## 初始化
 
@@ -66,9 +144,9 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
    若用户未明确指定，通过提问确认。确认后所有后续产出均存放于该路径下。
 
-2. 读取知识库入口文件建立业务上下文：
-   - `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\CLAUDE.md` — 系统全貌
-   - `d:\不动产qoder文件夹\openclaw-skills-knowledge-base\index.md` — 定位相关文档
+2. 读取知识库入口文件建立业务上下文（**若 `knowledgeBase` 未配置则跳过本步并提示用户**）：
+   - `{knowledgeBase}/CLAUDE.md` — 系统全貌
+   - `{knowledgeBase}/index.md` — 定位相关文档
    - 根据用户描述的应用名，读取对应应用的名词解释和相关业务文档
 
 3. 使用结构化提问与用户澄清（每轮可同时提出多个问题，按 4 个维度组织）：
@@ -89,14 +167,14 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 **目标**：确定功能范围、交互流程和端联动影响。
 
-### Step 1：调用 pd-agent
+### Step 1：委派 pd-agent
+
+按「Subagent 委派约定」用 `subagent` 工具委派 `pd-agent`（角色定义：`{repoRoot}/agents/pd-agent.md`），prompt 中的任务部分如下：
 
 ```
-请使用 pd-agent 完成以下任务：
-
 先读取以下文件了解业务背景：
 1. output/{project-id}/{iteration-id}/context.md — 需求上下文
-2. d:\不动产qoder文件夹\openclaw-skills-knowledge-base\{应用名}\名词解释.md — 术语对齐
+2. {knowledgeBase}/{应用名}/名词解释.md — 术语对齐（知识库未配置则跳过）
 3. 知识库中与需求相关的业务文档
 
 任务：
@@ -129,15 +207,15 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 **目标**：输出完整的 PRD 文档（13 个章节）。
 
-### Step 1：调用 pd-agent 生成 PRD
+### Step 1：委派 pd-agent 生成 PRD
+
+按「Subagent 委派约定」用 `subagent` 工具委派 `pd-agent`；委派前先用 `skill` 工具加载 `prd-writer` 与 `incremental-prd` 并在 prompt 中要求该角色遵循。prompt 中的任务部分如下：
 
 ```
-请使用 pd-agent 完成以下任务：
-
 先读取以下文件：
 1. output/{project-id}/{iteration-id}/context.md — 全局上下文
 2. output/{project-id}/{iteration-id}/prd/phase1-feature-list.md — Phase 1 功能列表（含交互设计清单）
-3. 知识库中所有相关文档（按 index.md 定位）
+3. 知识库中所有相关文档（按 index.md 定位；知识库未配置则跳过）
 
 任务：
 1. 先完成影响分析（12 维度 + 各端联动），输出影响分析确认
@@ -169,16 +247,16 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 **目标**：通过技术和测试视角评审，整合后输出最终版本。
 
-### Step 1：并行调用 dev-agent 和 qa-agent
+### Step 1：并行委派 dev-agent 和 qa-agent
 
-**调用 dev-agent**：
+在**同一条回复里同时发起两个 `subagent` 调用**（角色定义分别为 `{repoRoot}/agents/dev-agent.md`、`{repoRoot}/agents/qa-agent.md`）；委派前先加载 `tech-review` / `test-review` 技能，并要求对应角色按其维度评审。
+
+**dev-agent 的任务 prompt**：
 ```
-请使用 dev-agent 完成技术评审：
-
 先读取以下文件：
 1. output/{project-id}/{iteration-id}/prd/PRD-{name}-v1.md — 待评审 PRD
 2. output/{project-id}/{iteration-id}/context.md — 项目背景
-3. 知识库中相关架构文档
+3. 知识库中相关架构文档（知识库未配置则跳过）
 
 任务：对 PRD 进行技术可行性评审，输出：
 1. 综合评分（1-5）
@@ -190,14 +268,12 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 将评审报告写入 output/{project-id}/{iteration-id}/reviews/dev-review.md
 ```
 
-**调用 qa-agent**：
+**qa-agent 的任务 prompt**：
 ```
-请使用 qa-agent 完成测试评审：
-
 先读取以下文件：
 1. output/{project-id}/{iteration-id}/prd/PRD-{name}-v1.md — 待评审 PRD
 2. output/{project-id}/{iteration-id}/context.md — 项目背景
-3. 知识库中相关业务文档
+3. 知识库中相关业务文档（知识库未配置则跳过）
 
 任务：对 PRD 进行测试场景评审，输出：
 1. 测试场景覆盖度评估
@@ -209,11 +285,11 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 将评审报告写入 output/{project-id}/{iteration-id}/reviews/qa-review.md
 ```
 
-### Step 2：调用 pd-agent 整合评审
+### Step 2：委派 pd-agent 整合评审
+
+按「Subagent 委派约定」委派 `pd-agent`（委派前先加载 `incremental-prd` 技能），任务 prompt 如下：
 
 ```
-请使用 pd-agent 整合评审意见：
-
 先读取以下文件：
 1. output/{project-id}/{iteration-id}/prd/PRD-{name}-v1.md — PRD 初稿
 2. output/{project-id}/{iteration-id}/reviews/dev-review.md — 技术评审报告
@@ -261,11 +337,11 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 - 列表页必须包含筛选/搜索/分页的完整交互
 - 弹窗/抽屉必须有关闭、overlay、ESC关闭
 
-### Step 2：调用 ued-agent 生成原型
+### Step 2：委派 ued-agent 生成原型
+
+按「Subagent 委派约定」委派 `ued-agent`（角色定义：`{repoRoot}/agents/ued-agent.md`）；委派前先用 `skill` 工具加载 `html-prototype`，并要求该角色遵循其中的端布局类型与交互规范。任务 prompt 如下：
 
 ```
-请使用 ued-agent 生成最终原型：
-
 先读取以下文件：
 1. output/{project-id}/{iteration-id}/prd/PRD-{name}-v2.md — 最终 PRD
 2. output/{project-id}/{iteration-id}/prd/interaction-design.md — 交互设计清单
@@ -296,12 +372,12 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 - 导航首页 → output/{project-id}/{iteration-id}/prototype/index.html
 ```
 
-> **注意**：任务 1-4 由 ued-agent 执行；Vercel 部署由主 Agent 在 ued-agent 完成后调用 `/vercel-deploy` 执行。
+> **注意**：任务 1-4 由 ued-agent 执行，**不做截图**（团队约定取消截图环节，交付物不含 `screenshots/`）。发布不在 ued-agent 内做：ued-agent 完成后由主 Agent 用 `oss-upload` 技能上传（`--prefix` 按项目），并挂到总导航 `https://demo.ddys-inc.com/index.html`。**发布是共享资源操作，需当次明确授权**：先与线上 diff 确认无他人改动 → 备份 → 只追加不重排 → 上传后回归其他项目 Tab。
 
 ### Step 3：用户确认页面结构
 
 原型生成后，向用户展示：
-- Vercel 预览链接（或本地预览）
+- **线上预览地址**（`oss-upload` 上传后的 `https://demo.ddys-inc.com/<项目前缀>/...`）；未获当次发布授权或取不到凭据时，才用本地预览作次级备选并注明「未上传 OSS，交付未完成」
 
 询问用户：
 - ✅ 结构 OK，继续回写
@@ -316,9 +392,11 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 ```
 遍历 PRD 第十一章每个页面的 `###### 原型` 段落，填入：
-- **预览链接**：Vercel 部署地址 + 对应页面路径
+- **预览链接**：线上地址（https://demo.ddys-inc.com/<项目前缀>/...）或仓库内相对路径
 - 替换所有"待 UED 填充"占位符
 ```
+
+> 团队约定：「发布」与「把线上地址写回 PRD」是两件**可分开授权**的事。照常发布并回报线上 URL，但 PRD 第 3 章默认保留仓库内相对路径——**写不写线上地址按当次授权**。
 
 ### Step 5：完成交付
 
@@ -337,7 +415,7 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 | output/{project-id}/{iteration-id}/reviews/integration-report.md | 整合报告 |
 | output/{project-id}/{iteration-id}/prototype/index.html | 原型导航 |
 | output/{project-id}/{iteration-id}/prototype/pages/*.html | 原型页面 |
-| Vercel 部署链接 | 公网可访问原型 |
+| 线上地址 | 公网可访问原型（https://demo.ddys-inc.com/<项目前缀>/...，挂总导航后） |
 ```
 
 ---
@@ -368,5 +446,7 @@ Phase 4 → Phase 2：PRD 有重大遗漏，回退补充
 
 ## 详细参考资料
 
-- 各 Phase 的详细 prompt 模板见 [WORKFLOW-DETAIL.md]
-- context.md 的字段模板见 [CONTEXT-TEMPLATE.md]
+- 各 Phase 的详细 prompt 模板见 `<基目录>/WORKFLOW-DETAIL.md`
+- context.md 的字段模板见 `<基目录>/CONTEXT-TEMPLATE.md`
+
+> `<基目录>` 是本 Skill 被 `skill` 工具加载时返回的目录路径，见「技能与同目录资源的引用方式」。

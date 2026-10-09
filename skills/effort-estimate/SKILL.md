@@ -97,13 +97,34 @@ description: 基于PRD功能列表和模块影响分析，按角色（产品经�
 
 ### Excel输出（用户要求时生成）
 
-使用 `scripts/generate-estimate.js` 生成 Excel 文件。
+使用 `scripts/generate_estimate.py`（Python + openpyxl）生成 Excel 文件，不再依赖 Node/`xlsx` npm 包。
 
-**生成命令**：
+**运行时**（本机绝对路径，已装 openpyxl，无需联网安装任何依赖）：
+`/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3`，下文以 `$PY` 代指。
+
+**生成命令**（可直接复制执行）：
 ```bash
-node "scripts/generate-estimate.js" \
+PY=/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+SKILL=/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/effort-estimate
+"$PY" "$SKILL/scripts/generate_estimate.py" \
   --name "迭代名称" \
+  --data "数据JSON路径" \
   --output "输出路径.xlsx"
+```
+
+**命令行参数**：
+
+| 参数 | 说明 | 缺省行为 |
+|------|------|---------|
+| `--name` | 迭代/项目名称 | `项目工期预估`；若 `--data` 中已有 `projectInfo.name`，以 JSON 为准 |
+| `--data` | 数据 JSON 路径 | 缺省时使用脚本内置示例数据；路径不存在或 JSON 非法会直接报错退出 |
+| `--output` | 输出 .xlsx 路径 | 技能根目录下的 `工期预估.xlsx` |
+| `--print-template` | 打印数据 JSON 模板（DATA_TEMPLATE）后退出，不生成 Excel | — |
+
+**查看数据 JSON 模板**（`--data` 需要提供的结构，含 `projectInfo` / `roles[].items[].task|complexity|days` / `risks` / `cycleEstimate`）：
+```bash
+PY=/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+"$PY" "/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/effort-estimate/scripts/generate_estimate.py" --print-template
 ```
 
 如脚本不存在，参照模板新建，包含以下 Sheet：
@@ -119,10 +140,7 @@ node "scripts/generate-estimate.js" \
 | QA测试 | 工作项 + 人天 |
 | 风险项 | 风险项 + 等级 + 影响 + 应对 |
 
-Excel 使用 `xlsx` npm 包，需确保已安装：
-```bash
-npm install xlsx --registry=https://registry.npmmirror.com --save-dev
-```
+Excel 由 Python 的 openpyxl 生成，运行时需使用上方标注的 Python 解释器，不要再安装 `xlsx` 等 npm 依赖。
 
 ## 注意事项
 

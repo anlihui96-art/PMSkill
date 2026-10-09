@@ -224,9 +224,15 @@ const escaped = mdContent.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\
 - 移动端自适应（隐藏侧边栏）
 - OSS 上传路径：`prd/PRD-[名称].html`，Content-Type: `text/html; charset=utf-8`
 
-### OSS 配置
+### OSS 上传
 
-同 html-prototype skill 的 OSS 配置（demoddys bucket, oss-cn-shanghai）。
+上传动作统一交给 `oss-upload` 技能（本仓库唯一的上传实现：零第三方依赖的签名 + `--verify` 上传后校验），**不要再用旧的 `ali-oss` 代码片段**。
+
+- bucket key：`ai-auction-analysis/v1-售前分析/PRD-[名称].html`（前缀按项目，见 `oss-upload` 技能的前缀表）
+- Content-Type：`text/html; charset=utf-8`（否则浏览器会下载而不是渲染）
+- 凭据由 `oss-upload` **运行时**读取（环境变量或既有脚本），**不要把密钥写进配置文件或本仓库**
+- **无凭据时降级**（🔴）：先排查 `credentialsFrom` 指向的既有脚本是否有效；确实取不到时才改用本地 HTTP 服务预览，并在交付说明中注明「**未上传 OSS，交付未完成**」
+- 上传通过 `--verify` 后，把**公网链接**（`https://demo.ddys-inc.com/...`）回填到 PRD 的「原型链接」章节；**本地预览地址不得占用主链接位**
 
 ## 完整 PRD 模板
 
