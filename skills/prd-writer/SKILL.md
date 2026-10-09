@@ -200,15 +200,29 @@ description: >
 
 ### 生成方式
 
-使用 Node.js 脚本读取 Markdown 源文件，用 `marked.js` 渲染为带目录导航的 HTML 页面：
+用本技能自带的渲染脚本（零第三方依赖，输出**单文件 HTML**），直接复制执行：
 
-```js
-const fs = require('fs');
-const path = require('path');
-const mdContent = fs.readFileSync('PRD-xxx.md', 'utf-8');
-const escaped = mdContent.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-// 将 escaped 嵌入 HTML 模板的 template literal 中，用 marked.parse() 渲染
+```bash
+# macOS 本机没有系统 node/npm，统一使用 harness 自带 node
+/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/node/bin/node \
+  /Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/prd-writer/scripts/render_prd_html.mjs \
+  <PRD 的 .md 路径> -o <输出 .html 路径> \
+  --title "PRD-xxx" --version "v1.5"
 ```
+
+- 参数：`--title` 缺省取正文第一个 H1（再缺省取输入文件名）；`--version` 渲染到顶部粘性标题栏的版本徽章，**缺省不显示徽章**（版本号取第十三章 13.2 变更记录表的最新版本）。
+- 脚本把 **marked 源码 + CSS + 页面 JS 全部内联**进单个 HTML，产物**零 CDN、零外部请求**（`grep -E '(src|href)="https?:'` 应为 0），可直接上传 OSS 打开。
+- 渲染库固定为 **marked v18.1.0（MIT）**，已本地 vendor 在 `vendor/marked.umd.js`（版本、来源 URL、校验和与更新方式见 `vendor/README.md`）；**不要**改回 CDN 引用，也不要 npm/pnpm 安装依赖，更不要引 mermaid。
+- **本机路径替换方式**：换机器或换仓库位置时，只替换上面两条绝对路径即可——
+  - node：`NODE=$(command -v node || echo ~/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/node/bin/node)`
+  - 脚本：`<本仓库根目录>/skills/prd-writer/scripts/render_prd_html.mjs`（本机为 `/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/...`）
+- 输入/输出相对路径按**当前工作目录**解析，不确定时直接给绝对路径；脚本会在渲染后自检"外部资源引用 = 0 / 内联脚本可安全解析"，不通过则非零退出。
+
+### 图片与原始 HTML 的边界（实测确认）
+
+- **允许**：内联 SVG（团队约定流程图手绘 SVG 内联，会原样保留在正文）、`data:` URI 图片（内联，不违反自包含）。
+- **会被拦下（非零退出）**：`<img src="https://…">` 外链、`<img src="images/a.png">` 这类相对路径（传到 OSS 会 404）、`<style>@import …</style>`、CSS `url(//…)`。这些都是"未内联的外部引用"，请改为内联 SVG 或 `data:` URI。
+- ⚠️ **原始 HTML 会穿透**：marked 默认放行 markdown 里的原始 HTML，所以正文里写的 `<script>…</script>` **会被原样保留成可执行脚本**。浏览页是挂在**匿名可读**的 OSS 上的，因此**不要在 PRD 里粘贴 `<script>`**（从网页复制的片段尤其注意）；渲染器的自检不会拦截正文里的 `<script>`。
 
 ### HTML 模板要求
 
