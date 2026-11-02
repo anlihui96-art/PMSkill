@@ -75,7 +75,9 @@ Phase 4 原型交付（主 Agent 交互设计 → ued-agent 生成 HTML → 用�
 
 ### 方式二：DeepSeek Harness（DSH）
 
-DSH 通过**扫描技能根目录**发现技能：用户级是 `~/.dsh/skills/`，项目级是 `<项目根>/.dsh/skills/`，识别 `<name>/SKILL.md` 目录包或 `<name>.md` 平铺文件。本仓库 `skills/` 下每个技能都已是 `<name>/SKILL.md` 结构，所以注册只需把技能目录软链进用户级技能根目录：
+DSH 通过**扫描技能根目录**发现技能：用户级是 `~/.dsh/skills/`，项目级是 `<项目根>/.dsh/skills/`，识别 `<name>/SKILL.md` 目录包或 `<name>.md` 平铺文件。本仓库 `skills/` 下每个技能都已是 `<name>/SKILL.md` 结构，所以注册只需把技能目录软链进用户级技能根目录。
+
+> **没有 git 的话**：把拿到的 zip 解压到任意目录，解压出的 `PMSkill/` 目录就是下面的 `REPO`；后续更新用新 zip 覆盖同名目录即可。
 
 ```bash
 REPO=/path/to/PMSkill          # 本仓库克隆路径
@@ -85,7 +87,7 @@ for d in "$REPO"/skills/*/; do
 done
 ```
 
-注册后**无需重启**：DSH 监听技能根目录，新增/修改会立即反映到技能列表。后续更新技能只需 `git pull`（软链指向仓库，内容即时生效）。
+注册后**无需重启**：DSH 监听技能根目录，新增/修改会立即反映到技能列表。后续更新技能只需 `git pull`（zip 用户重新解压覆盖；软链指向仓库，内容即时生效）。
 
 #### DSH 下的额外配置
 
