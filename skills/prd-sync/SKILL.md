@@ -34,7 +34,7 @@ Task Progress:
 
 先完成用户明确要求的改动，这是后续同步的基础。
 
-**同步记录变更日志**：在 PRD 第十三章 13.2 变更记录表中追加变更行，同时更新文件头部 HTML 注释摘要（编号连续递增，描述具体到字段级别）。
+**同步记录变更日志**：在 PRD 第十章 10.2 变更记录表中追加变更行，同时更新文件头部 HTML 注释摘要（编号连续递增，描述具体到字段级别）。
 
 ---
 
@@ -124,12 +124,15 @@ Grep(keyword, glob="*.html", path="project_root")
 | 上下文文档 | 目标表、影响范围、用户故事、Phase 结论 |
 | HTML 原型 | 侧边栏、表头、弹窗字段、JS 逻辑、nth-child 索引 |
 
-### 4.3 使用 TodoWrite 追踪
+### 4.3 使用 todo_write 追踪
 
-每修改一个文件，更新任务状态：
+每修改一个文件，更新任务状态（DSH 的 `todo_write` 用整张表覆盖，状态取 `pending` / `in_progress` / `completed`）：
 
 ```
-TodoWrite(merge=true, todos=[{id: "sync-文件", status: "COMPLETE", content: "同步 文件名（N处）"}])
+todo_write(todos=[
+  {"content": "同步 文件名（N处）", "status": "completed"},
+  {"content": "Grep 验证无遗漏", "status": "in_progress"}
+])
 ```
 
 ---
