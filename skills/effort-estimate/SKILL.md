@@ -1,6 +1,6 @@
 ---
 name: effort-estimate
-description: 基于PRD功能列表和模块影响分析，按角色（产品经理/UED/后端/前端/QA）拆解工期预估，输出Excel。当用户要求估算工期、人力预估、工作量评估、排期计划时使用。
+description: 基于PRD功能范围与已有功能说明，按角色（产品经理/UED/后端/前端/QA）拆解工期预估，输出Excel。当用户要求估算工期、人力预估、工作量评估、排期计划时使用。
 ---
 
 # 工期预估 Skill
@@ -14,7 +14,7 @@ description: 基于PRD功能列表和模块影响分析，按角色（产品经�
 预估前必须读取以下文件（按优先级）：
 
 1. **功能列表**：`prd/phase1-feature-list.md` — 获取功能编号、优先级、用户故事
-2. **PRD主文档**：`prd/PRD-*.md` — 获取模块影响分析（接口清单、数据变更、风险项）
+2. **PRD主文档**：`prd/PRD-*.md` — 获取功能范围、已有功能说明、业务流程与业务逻辑（功能清单、改动面、状态流转）
 3. **上下文**：`context.md` — 获取涉及端、迭代范围
 
 ## 预估方法论
@@ -100,12 +100,12 @@ description: 基于PRD功能列表和模块影响分析，按角色（产品经�
 使用 `scripts/generate_estimate.py`（Python + openpyxl）生成 Excel 文件，不再依赖 Node/`xlsx` npm 包。
 
 **运行时**（本机绝对路径，已装 openpyxl，无需联网安装任何依赖）：
-`/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3`，下文以 `$PY` 代指。
+`$HOME/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3`，下文以 `$PY` 代指。
 
 **生成命令**（可直接复制执行）：
 ```bash
-PY=/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
-SKILL=/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/effort-estimate
+PY=$HOME/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+SKILL=$REPO/skills/effort-estimate
 "$PY" "$SKILL/scripts/generate_estimate.py" \
   --name "迭代名称" \
   --data "数据JSON路径" \
@@ -123,8 +123,8 @@ SKILL=/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/ef
 
 **查看数据 JSON 模板**（`--data` 需要提供的结构，含 `projectInfo` / `roles[].items[].task|complexity|days` / `risks` / `cycleEstimate`）：
 ```bash
-PY=/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
-"$PY" "/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/effort-estimate/scripts/generate_estimate.py" --print-template
+PY=$HOME/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+"$PY" "$REPO/skills/effort-estimate/scripts/generate_estimate.py" --print-template
 ```
 
 如脚本不存在，参照模板新建，包含以下 Sheet：

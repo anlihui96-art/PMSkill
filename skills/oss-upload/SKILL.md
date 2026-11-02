@@ -21,14 +21,14 @@ description: >
 本机唯一可用（且只用标准库，无需联网安装）：
 
 ```
-/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+$HOME/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
 ```
 
 下文统一用 `$PY` 代指；若 `python3` 在 PATH 中能找到（Python 3.8+），也可直接用 `python3`。
 
 ```bash
-PY=/Users/a131/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
-SKILL=/Users/a131/Documents/deepseek-harness/default-workspace/PMSkill/skills/oss-upload
+PY=$HOME/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3
+SKILL=$REPO/skills/oss-upload
 ```
 
 > 上面两个路径是**本机的值**，换机器需要替换：`PY` 是 DSH 随附的 Python（`$DSH_HOME/dsh-runtimes/dsh-primary-runtime/dependencies/python/bin/python3`），`SKILL` 是本仓库的克隆路径（即 `~/.pm-skill/config.yml` 里的 `repoRoot`）+ `/skills/oss-upload`。脚本本身零第三方依赖，任何 Python 3.8+ 都能跑。
@@ -140,7 +140,7 @@ oss:
   region: oss-cn-shanghai
   endpoint: https://oss-cn-shanghai.aliyuncs.com
   publicBase: https://demo.ddys-inc.com/
-  credentialsFrom: /Users/a131/Documents/不动产qoder文件夹/output/zhelicha/_upload_index.js
+  credentialsFrom: /path/to/_upload_index.js
 ```
 
 🔴 **安全约束（必须遵守）**
@@ -157,7 +157,7 @@ oss:
 1. **先排查凭据路径**：`credentialsFrom` 指向的既有脚本是否还在、是否仍能解析出 `accessKeyId` / `accessKeySecret`（**不要打印值**）。能修就修——优先恢复真实上传，而不是直接降级。
 2. 确实拿不到凭据时才降级为本地预览：`python3 -m http.server 8080 --directory <原型目录>`
 3. 降级说明必须写清「**未上传 OSS，交付未完成**」+ 缺的是哪个来源 + 恢复上传需要做什么。
-4. **本地预览地址不得占用 PRD / 导航页的主链接位**（PRD 第 3 章「原型链接」保留仓库内相对路径），本地地址只作次级备注。
+4. **本地预览地址不得占用原型导航页的主链接位**（导航页保留仓库内相对路径），本地地址只作次级备注。
 
 ## 命令行参数
 

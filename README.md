@@ -20,11 +20,11 @@ Phase 0 需求澄清（主 Agent 对话 + 知识库辅助）
    ↓
 Phase 1 需求分析（pd-agent）→ 用户确认
    ↓
-Phase 2 PRD 初稿（pd-agent，13 章模板）→ 用户审阅
+Phase 2 PRD 初稿（pd-agent，10 章模板）→ 用户审阅
    ↓
 Phase 3 深度评审（dev-agent + qa-agent → pd-agent 整合）→ 最终 PRD
    ↓
-Phase 4 原型交付（主 Agent 交互设计 → ued-agent 生成 HTML → 用户确认 → 链接回写 PRD）
+Phase 4 原型交付（主 Agent 交互设计 → ued-agent 生成 HTML → 用户确认 → 挂原型导航页）
 ```
 
 各 Subagent 通过**文件系统**传递上下文（`context.md` / `phase1-feature-list.md` / `PRD-*-v1/v2.md` / `reviews/*.md` / `interaction-design.md` / `prototype/*`），并内置 Phase 间的流程回退规则。
@@ -43,7 +43,7 @@ Phase 4 原型交付（主 Agent 交互设计 → ued-agent 生成 HTML → 用�
 | 技能 | 说明 |
 |------|------|
 | `prd-workflow` | PRD 多 Agent 协作工作流编排，管理 4 阶段全流程（含 `WORKFLOW-DETAIL.md` 详细 prompt 模板、`CONTEXT-TEMPLATE.md` 上下文模板） |
-| `prd-writer` | PRD 编写规范与 13 章标准模板，含影响分析 12 维度（`templates/prd-template.md`） |
+| `prd-writer` | PRD 编写规范与 10 章标准模板（`templates/prd-template.md`） |
 | `incremental-prd` | PRD 增量编写约束：修改已有功能时仅描述新增/变更部分，禁止重复定义已有字段 |
 | `prd-sync` | PRD 关联文件全量同步：变更影响识别 → Grep 扫描 → 批量同步 → Grep 验证 |
 | `html-prototype` | HTML 原型生成规范：纯原生 CSS/JS 单文件方案、DDYS 设计系统（含 `DESIGN-SPEC.md`） |

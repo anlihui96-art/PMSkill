@@ -23,7 +23,7 @@ Phase 2：PRD 初稿（pd-agent）
     ↓ 用户审阅
 Phase 3：深度评审（dev-agent + qa-agent → pd-agent 整合）
     ↓
-Phase 4：原型交付（交互设计 → ued-agent 生成 → 用户确认结构 → 链接回写）
+Phase 4：原型交付（交互设计 → ued-agent 生成 → 用户确认结构 → 挂原型导航页）
     ↓
 完成交付
 ```
@@ -181,9 +181,7 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 1. 输出功能列表（按端→模块分组，每个功能含优先级P0-P3和用户故事）
 2. 输出核心交互流程（每个功能的正常流程和异常流程）
 3. 输出交互设计清单（每个页面的关键交互：字段联动、状态转换、异常反馈、表单校验规则）
-4. 完成各端联动影响分析，根据所属应用确定联动范围：
-   - **这里拍**：运营端、商家端、服务商端、用户端（4端联动）
-   - **这里查**：运营端、渠道端、用户端（3端联动）
+4. 标注四端（这里拍：运营端 / 商家端 / 服务商端 / 用户端；这里查：运营端 / 渠道端 / 用户端）在功能列表中的改动点与权限差异
 
 将结果写入 output/{project-id}/{iteration-id}/prd/phase1-feature-list.md
 ```
@@ -205,7 +203,7 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 ## Phase 2：PRD 初稿
 
-**目标**：输出完整的 PRD 文档（13 个章节）。
+**目标**：输出完整的 PRD 文档（10 个章节）。
 
 ### Step 1：委派 pd-agent 生成 PRD
 
@@ -218,12 +216,18 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 3. 知识库中所有相关文档（按 index.md 定位；知识库未配置则跳过）
 
 任务：
-1. 先完成影响分析（12 维度 + 各端联动），输出影响分析确认
-2. 按 13 章标准模板生成完整 PRD
-3. 第十一章"功能需求"必须严格按五段式组织：
-   - ##### 需求描述（多段文字，不允许只写一句话）
-   - ##### 核心交互流程（按 Case 编号）
-   - ##### 页面说明（页面层级结构 + 字段说明表 + 校验规则表 + 异常处理表 + 原型占位）
+1. 按 10 章标准模板生成完整 PRD（用 skill 工具加载 prd-writer，先读 templates/prd-template.md 再写）
+2. 第八章"功能需求"**按端 → 主页面组织**：一个标题只对应一个主页面；下钻（弹窗、区块、次级页）不单列标题，并入主页面并用表格「区块」列区分；无页面的系统能力放本章末尾单列一组：
+   - 主页面：一段定位语（≤80 字）+ 该页面的 Case（每个完整业务事件一条）+ 字段说明 / 校验规则 / 异常处理三表（带「区块」列；用加粗行，不用 ###### 标题）
+   - 无独立页面的系统能力（规则匹配 / 状态流转 / 资金动作 / 消息通知 / 操作留痕）：只写定位语 + Case，标题注明「无独立页面」
+3. 体量与边界纪律（与 prd-writer 一致，违反即返工）：
+   - 不写「原型链接」「模块影响分析」章节，不写原型段
+   - 禁止编造「页面 1（无独立页面）」伪页面块
+   - 字段说明表只写业务数据字段，按钮 / 计数器 / 提示文案不进表
+   - 校验规则与异常处理无内容时整表省略，禁止整表写「无」
+   - 单条功能建议 ≤ 90 行；超过 120 行须合并同构功能或拆分
+   - 同一能力多端一致时只写一条，其余端用「与 8.x.x 完全一致」引用
+   - 附录只放相关文档 + 变更记录 + 遗留项；自检结果、条目对照等过程产物另存独立文件
 
 将 PRD 写入 output/{project-id}/{iteration-id}/prd/PRD-{功能名称}-v1.md
 ```
@@ -313,11 +317,11 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 ## Phase 4：原型交付
 
-**目标**：基于最终 PRD 生成高质量 HTML 原型（布局+交互），用户确认页面结构后链接回写。
+**目标**：基于最终 PRD 生成高质量 HTML 原型（布局+交互），用户确认页面结构后挂到原型导航页。
 
 ### Step 1：交互设计（主 Agent）
 
-在调用 ued-agent 之前，主 Agent 先从 PRD 第十一章提取每个页面的**交互设计清单**，写入 `output/{project-id}/{iteration-id}/prd/interaction-design.md`：
+在调用 ued-agent 之前，主 Agent 先从 PRD 的「功能需求」章提取每个页面的**交互设计清单**，写入 `output/{project-id}/{iteration-id}/prd/interaction-design.md`：
 
 ```markdown
 # 交互设计清单
@@ -336,6 +340,17 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 - 表单必须包含前端校验（非空、格式、长度）
 - 列表页必须包含筛选/搜索/分页的完整交互
 - 弹窗/抽屉必须有关闭、overlay、ESC关闭
+
+### 存量页面改造（Phase 4 前置判定）
+
+生成原型前，先判断每个页面在项目前端代码里**是否已存在**：
+
+| 类型 | 处理 |
+|---|---|
+| 存量页面（代码里已有该路由/页面组件） | 必须**在原页面基础上改**：先读原页面源码还原其现有结构，再标注新增 / 变更，**禁止从零重新设计** |
+| 全新页面 | 正常设计，但与该端既有页面范式一致 |
+
+委派 ued-agent 时，把「哪些页是存量改造页 + 原页面代码路径」写进 prompt，并要求它先读源码再画。
 
 ### Step 2：委派 ued-agent 生成原型
 
@@ -362,7 +377,7 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 - 列表页筛选/搜索必须有实时过滤效果
 
 任务：
-1. 解析 PRD 第十一章 + 交互设计清单，提取所有页面
+1. 解析 PRD「功能需求」章 + 交互设计清单，提取所有页面
 2. 为每个页面按 DDYS 设计令牌手写组件样式生成静态布局，再注入业务交互逻辑
 3. 生成导航首页 index.html（链接到各页面）
 4. 启动本地 HTTP 服务验证页面可正常渲染
@@ -386,17 +401,15 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 
 如有调整，再次调用 ued-agent 修订。确认后进入回写步骤。
 
-### Step 4：回写原型到 PRD
+### Step 4：原型归档（不写回 PRD）
 
-原型确认后，主 Agent 将原型信息回写到 PRD 第十一章：
+**PRD 不承载原型链接**（已无原型章节、无原型段）。原型确认后：
 
-```
-遍历 PRD 第十一章每个页面的 `###### 原型` 段落，填入：
-- **预览链接**：线上地址（https://demo.ddys-inc.com/<项目前缀>/...）或仓库内相对路径
-- 替换所有"待 UED 填充"占位符
-```
+1. 把原型挂到原型导航页 `output/{project-id}/{iteration-id}/prototype/index.html`，按「端 → 页面名」组织
+2. 线上地址（`https://demo.ddys-inc.com/<项目前缀>/...`）登记在交付报告的原型清单里
+3. PRD 与原型靠**功能模块名**对应，不建立链接互指
 
-> 团队约定：「发布」与「把线上地址写回 PRD」是两件**可分开授权**的事。照常发布并回报线上 URL，但 PRD 第 3 章默认保留仓库内相对路径——**写不写线上地址按当次授权**。
+> 团队约定：「发布」与「登记线上地址」是可分开授权的两件事。发布照常回报线上 URL；本地预览地址不得占用主链接位。
 
 ### Step 5：完成交付
 
@@ -408,7 +421,7 @@ mkdir -p output/{project-id}/{iteration-id}/prd output/{project-id}/{iteration-i
 ## 交付物清单
 | 文件 | 说明 |
 |------|------|
-| output/{project-id}/{iteration-id}/prd/PRD-{name}-v2.md | 最终 PRD（含原型预览链接） |
+| output/{project-id}/{iteration-id}/prd/PRD-{name}-v2.md | 最终 PRD |
 | output/{project-id}/{iteration-id}/prd/interaction-design.md | 交互设计清单 |
 | output/{project-id}/{iteration-id}/reviews/dev-review.md | 技术评审 |
 | output/{project-id}/{iteration-id}/reviews/qa-review.md | 测试评审 |
